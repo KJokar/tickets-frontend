@@ -11,6 +11,8 @@ npm run dev
 
 Open http://localhost:3000/login or /signup. The API defaults to http://localhost:5080. To change it, copy `.env.example` to `.env.local`, set `AUTH_BACKEND_ORIGIN` to an origin without an API suffix, and restart Next.js. Set it before production builds too. Next rewrites `/api/v1/auth/*`, `/Tickets/v1/*`, and `/hubs/tickets/*` to that backend, including WebSocket upgrades.
 
+To send browser requests directly to a separate API host, set `NEXT_PUBLIC_API_ORIGIN` (for example `https://api-ticketing.theteam-test.xyz`) before building. Authentication, password recovery, ticket requests, and SignalR then use that origin. Leave it empty for the same-origin proxy used in local development. The API must allow the frontend HTTPS origin through CORS; storage uses its own `NEXT_PUBLIC_CDN_ORIGIN`. Changing either public origin requires rebuilding the frontend.
+
 ## Authentication
 
 Country choices load from `/Common/v1/Countries/List`. Login, signup and password recovery share a searchable country picker with actual local SVG flags in every option, dialing prefixes and keyboard selection. The list opens in a portal so it stays within the viewport without moving the form. Country IDs sent to the API remain unchanged; loading/failure and retry states do not substitute a fake Iran-only list.
@@ -38,7 +40,7 @@ The backend exposes no `/me` or logout/revocation endpoint. Logout clears local 
 
 ## Tickets
 
-All ticket operations use `authenticatedFetch` for Bearer headers, refresh and one-time 401 recovery. Requests are uncached, constrained to same-origin ticket API paths, and use timeouts. Protected reads abort on unmount/filter changes, and late responses cannot overwrite newer results.
+All ticket operations use `authenticatedFetch` for Bearer headers, refresh and one-time 401 recovery. Requests are uncached, constrained to validated ticket API paths on the configured origin, and use timeouts. Protected reads abort on unmount/filter changes, and late responses cannot overwrite newer results.
 
 | Endpoint under `/Tickets/v1/Tickets` | Frontend behavior |
 | --- | --- |

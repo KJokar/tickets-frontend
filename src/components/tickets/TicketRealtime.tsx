@@ -4,6 +4,7 @@ import { HubConnectionBuilder, HubConnectionState, LogLevel, type HubConnection 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { realtimeAccessToken } from "@/lib/auth";
+import { apiUrl } from "@/lib/api-url";
 import { markConversationRead, validMessage, validReadReceipt, validTicket, validTyping, validPresence, type ChatPresence, type ChatMessage, type ChatReadReceipt, type ChatTyping, type Ticket } from "@/lib/tickets";
 
 type RealtimeEvent = { type: "message"; data: ChatMessage } | { type: "ticket"; data: Ticket } | { type: "deleted" | "access" | "reminders"; data: { ticketId: number } } | { type: "read"; data: ChatReadReceipt } | { type: "typing"; data: ChatTyping } | { type: "presence"; data: { userId: number } } | { type: "queue" } | { type: "connected" };
@@ -25,7 +26,7 @@ function RealtimeSession({ userId, children }: { userId?: number; children: Reac
   useEffect(() => {
     if (!userId) return;
     let disposed = false; let retry: ReturnType<typeof setTimeout> | null = null;
-    const connection = new HubConnectionBuilder().withUrl("/hubs/tickets", {
+    const connection = new HubConnectionBuilder().withUrl(apiUrl("/hubs/tickets"), {
       accessTokenFactory: async () => { if (disposed) throw new Error("Connection stopped"); return realtimeAccessToken(userId); }, withCredentials: false,
     }).withAutomaticReconnect([0, 1000, 3000, 8000]).configureLogging(LogLevel.None).build();
     hub.current = connection;

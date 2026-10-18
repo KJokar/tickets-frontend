@@ -1,0 +1,31 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        AUTH_BACKEND_ORIGIN: http://api:8080
+        NEXT_PUBLIC_CDN_ORIGIN: ${NEXT_PUBLIC_CDN_ORIGIN:-http://localhost:5083}
+        NEXT_PUBLIC_API_ORIGIN: ${NEXT_PUBLIC_API_ORIGIN:-}
+    environment:
+      AUTH_BACKEND_ORIGIN: http://api:8080
+      HOSTNAME: 0.0.0.0
+      NODE_ENV: production
+      PORT: "3000"
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-3000}:3000"
+    networks:
+      - ticketing
+    restart: unless-stopped
+    stop_grace_period: 30s
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/login"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+networks:
+  ticketing:
+    external: true
+    name: tickets-backend_default

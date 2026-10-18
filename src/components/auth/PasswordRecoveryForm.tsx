@@ -6,6 +6,7 @@ import { AuthField } from "./AuthField";
 import { AuthSubmit } from "./AuthSubmit";
 import { PhoneInput, useCountries } from "./PhoneInput";
 import { iran } from "@/lib/phone";
+import { apiUrl } from "@/lib/api-url";
 type Step = "phone" | "code" | "password" | "success";
 type Operation = "request" | "resend" | "verify" | "reset";
 type ApiEnvelope<T> = { message?: string; data?: T };
@@ -107,7 +108,7 @@ export function PasswordRecoveryForm() {
     const controller = new AbortController();
     requestRef.current = controller;
     try {
-      const response = await fetch("/api/v1/auth/forgot-password/request", {
+      const response = await fetch(apiUrl("/api/v1/auth/forgot-password/request"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ countryId: Number(countryId), mobile }),
@@ -167,7 +168,7 @@ export function PasswordRecoveryForm() {
     const controller = new AbortController();
     requestRef.current = controller;
     try {
-      const response = await fetch("/api/v1/auth/forgot-password/verify", {
+      const response = await fetch(apiUrl("/api/v1/auth/forgot-password/verify"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ countryId: Number(countryId), mobile, code }),
@@ -229,7 +230,7 @@ export function PasswordRecoveryForm() {
     const controller = new AbortController();
     requestRef.current = controller;
     try {
-      const response = await fetch("/api/v1/auth/forgot-password/reset", {
+      const response = await fetch(apiUrl("/api/v1/auth/forgot-password/reset"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ countryId: Number(countryId), mobile, resetToken: resetToken, password, confirmPassword: confirmPassword }),

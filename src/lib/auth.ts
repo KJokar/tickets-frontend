@@ -1,4 +1,5 @@
 import type { Country } from "./phone";
+import { apiUrl } from "./api-url";
 export type UserRole = "client" | "agent";
 export type AuthUser = { id: number; fullName: string; name?: string; mobile: string; countryId: number; role: UserRole; permissions: string[]; avatarUrl?: string };
 export type AuthFieldName = "fullName" | "countryId" | "mobile" | "password" | "confirmPassword" | "role";
@@ -108,7 +109,7 @@ function errorMessage(status: number, payload: AuthPayload, path: string): strin
 async function request(path: string, init: RequestInit): Promise<AuthPayload> {
   let response: Response;
   try {
-    response = await fetch(path, { ...init, signal: requestSignal(init.signal), credentials: "omit", cache: "no-store",
+    response = await fetch(apiUrl(path), { ...init, signal: requestSignal(init.signal), credentials: "omit", cache: "no-store",
       headers: { Accept: "application/json", ...(init.body ? { "Content-Type": "application/json" } : {}), ...init.headers } });
   } catch (error) {
     if (init.signal?.aborted) throw error;
@@ -240,7 +241,7 @@ export async function authenticatedFetch(path: string, init: RequestInit = {}): 
     const headers = new Headers(init.headers);
     headers.set("Authorization", `Bearer ${token}`); headers.set("Accept", "application/json");
     try {
-      return await fetch(path, { ...init, headers, credentials: "omit", cache: "no-store", signal: requestSignal(init.signal, init.body instanceof FormData || path.includes("/Attachments/") ? 120_000 : 15_000), redirect: "error" });
+      return await fetch(apiUrl(path), { ...init, headers, credentials: "omit", cache: "no-store", signal: requestSignal(init.signal, init.body instanceof FormData || path.includes("/Attachments/") ? 120_000 : 15_000), redirect: "error" });
     } catch (error) {
       if (init.signal?.aborted) throw error;
       throw new AuthApiError("ارتباط با سرور برقرار نشد. دوباره تلاش کنید.", 0);

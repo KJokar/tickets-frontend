@@ -2,6 +2,36 @@ import assert from "node:assert/strict";
 import { afterEach, mock, test } from "node:test";
 import { AuthApiError, authenticatedFetch, canCreateTicket, getCountries, getCurrentUser, getRoles, homeForRole, login, logout, register, sessionExpiresAt, updateSessionProfile, type Registration } from "../src/lib/auth";
 import { validateLogin, validateSignup } from "../src/lib/auth-validation";
+import { apiUrl } from "../src/lib/api-url";
+
+test("configured API origin handles login and protected refresh retries without allowing token destinations to change", async () => {
+  const previous = process.env.NEXT_PUBLIC_API_ORIGIN;
+  process.env.NEXT_PUBLIC_API_ORIGIN = "https://api-ticketing.theteam-test.xyz/";
+  const calls: string[] = [];
+  const fetch = mock.method(globalThis, "fetch", async (input: string | URL | Request, init?: RequestInit) => {
+    const url = String(input);
+    calls.push(url);
+    if (url.endsWith("/login")) return Response.json(envelope());
+    if (url.endsWith("/refresh")) return Response.json(envelope({ token: "rotated-access" }));
+    const token = new Headers(init?.headers).get("Authorization");
+    return Response.json({ data: [] }, { status: token === "Bearer rotated-access" ? 200 : 401 });
+  });
+  try {
+    await login(registration.mobile, registration.password);
+    assert.equal((await authenticatedFetch("/Tickets/v1/Tickets/Dashboard")).status, 200);
+    const origin = "https://api-ticketing.theteam-test.xyz";
+    assert.deepEqual(calls, [origin + "/api/v1/auth/login", origin + "/Tickets/v1/Tickets/Dashboard", origin + "/api/v1/auth/refresh", origin + "/Tickets/v1/Tickets/Dashboard"]);
+    assert.equal(apiUrl("/hubs/tickets"), origin + "/hubs/tickets");
+    for (const path of ["https://other.example/Tickets/v1/Tickets/List", "//other.example/Tickets/v1/Tickets/List", "/Tickets/v1/../other"]) {
+      await assert.rejects(authenticatedFetch(path), AuthApiError);
+    }
+    assert.throws(() => apiUrl("//other.example"));
+    assert.equal(fetch.mock.callCount(), 4);
+  } finally {
+    if (previous === undefined) delete process.env.NEXT_PUBLIC_API_ORIGIN;
+    else process.env.NEXT_PUBLIC_API_ORIGIN = previous;
+  }
+});
 
 afterEach(async () => { mock.restoreAll(); await logout(); });
 const registration: Registration = {
